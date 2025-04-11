@@ -6,19 +6,22 @@ import { SuperCarValuationResponse } from '@app/super-car/types/super-car-valuat
 import { mockValuationRepository } from './mockValuationRepository';
 import { Source } from '@app/models/source';
 import { VehicleValuation } from '@app/models/vehicle-valuation';
+import { RequestAuditEntry } from '@app/models/request-audit';
+import { mockRequestAuditEntryRepository } from './mockRequestAuditEntryRepository';
 
 describe('ValuationController PUT (e2e)', () => {
   beforeAll(async () => {
     fastify.orm.getRepository = vi.fn().mockImplementation((clazz) => {
       if (clazz === VehicleValuation) {
         return mockValuationRepository;
+      } else if (clazz === RequestAuditEntry) {
+        return mockRequestAuditEntryRepository;
       }
     });
   });
 
-  beforeAll(() => {
+  beforeEach(() => {
     const mock = new AxiosMockAdapter(axios);
-
     const mockResponse: SuperCarValuationResponse = {
       vin: '12345678901234567',
       registrationDate: '2022-01-01',
@@ -32,9 +35,6 @@ describe('ValuationController PUT (e2e)', () => {
       },
     };
     mock.onGet(/\/valuations\/ABC123\?mileage=10000$/).reply(200, mockResponse);
-  });
-
-  beforeEach(() => {
     mockValuationRepository.insert.mockReset();
 
     const cb = fastify.valuationCircuitBreaker;
@@ -171,6 +171,62 @@ describe('ValuationController PUT (e2e)', () => {
       expect(mockValuationRepository.insert).not.toHaveBeenCalled();
 
       expect(cb.call).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('auditing', () => {
+    it('should add audit log for a successful request', async () => {
+      mockValuationRepository.insert.mockResolvedValueOnce({});
+      const requestBody: VehicleValuationRequest = {
+        mileage: 10000,
+      };
+
+      const res = await fastify.inject({
+        url: '/valuations/ABC123',
+        body: requestBody,
+        method: 'PUT',
+      });
+
+      expect(res.statusCode).toStrictEqual(200);
+
+      expect(mockRequestAuditEntryRepository.insert).toHaveBeenCalledWith({
+        id: expect.any(String),
+        requestDate: expect.any(Date),
+        requestDuration: expect.any(Number),
+        requestUrl: '/valuations/ABC123',
+        responseCode: 200,
+        error: undefined,
+        provider: Source.SUPER_CAR,
+        vrm: 'ABC123',
+      });
+    });
+
+    it('should add audit log for a failed request', async () => {
+      const mock = new AxiosMockAdapter(axios);
+      mock.onGet(/\/valuations\/ABC123\?mileage=10000$/).reply(400, {});
+
+      const requestBody: VehicleValuationRequest = {
+        mileage: 10000,
+      };
+
+      const res = await fastify.inject({
+        url: '/valuations/ABC123',
+        body: requestBody,
+        method: 'PUT',
+      });
+
+      expect(res.statusCode).toStrictEqual(500);
+
+      expect(mockRequestAuditEntryRepository.insert).toHaveBeenCalledWith({
+        id: expect.any(String),
+        requestDate: expect.any(Date),
+        requestDuration: expect.any(Number),
+        requestUrl: '/valuations/ABC123',
+        responseCode: 500,
+        provider: Source.SUPER_CAR,
+        vrm: 'ABC123',
+        error: 'Request failed with status code 400',
+      });
     });
   });
 });

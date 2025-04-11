@@ -13,6 +13,7 @@ declare module 'fastify' {
   export interface FastifyReplyContext {
     vrm?: string;
     provider?: Source;
+    error: string;
   }
 }
 

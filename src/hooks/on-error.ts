@@ -1,5 +1,4 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { RequestAuditEntry } from '../models/request-audit';
 
 export const onErrorHook = (fastify: FastifyInstance) => {
   return async (request: FastifyRequest, reply: FastifyReply, error: Error) => {
@@ -8,18 +7,6 @@ export const onErrorHook = (fastify: FastifyInstance) => {
       'Error occurred',
     );
 
-    try {
-      await fastify.orm.getRepository(RequestAuditEntry).update(
-        {
-          id: request.id,
-        },
-        {
-          responseCode: reply.statusCode,
-          error: error.message,
-        },
-      );
-    } catch (error) {
-      fastify.log.error(error, 'Error saving request audit entry');
-    }
+    reply.context.error = error.message;
   };
 };

@@ -31,8 +31,8 @@ export const app = (opts?: FastifyServerOptions) => {
       premiumCarValuationApiUrl: process.env.PREMIUM_CAR_VALUATION_API_URL!,
     })
     .decorate('valuationCircuitBreaker', circuitBreaker)
-    .addHook('onResponse', onResponseHook(fastify))
     .addHook('onError', onErrorHook(fastify))
+    .addHook('onResponse', onResponseHook(fastify))
     .ready();
 
   fastify.get('/', async () => {
