@@ -1,9 +1,5 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
-
-export enum Source {
-  SUPER_CAR = 'SuperCar',
-  PREMIUM = 'Premium',
-}
+import { Source } from './source';
 
 @Entity()
 export class VehicleValuation {

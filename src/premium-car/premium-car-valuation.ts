@@ -1,6 +1,7 @@
 import axios, { AxiosError, AxiosResponse } from 'axios';
 import { parseStringPromise } from 'xml2js';
-import { Source, VehicleValuation } from '../models/vehicle-valuation';
+import { VehicleValuation } from '../models/vehicle-valuation';
+import { Source } from '@app/models/source';
 
 import { FastifyInstance } from 'fastify';
 import { PremiumCarResponse } from './types/premium-car-response';

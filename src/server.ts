@@ -1,10 +1,14 @@
 import { app } from './app';
 import { logger } from './logger';
+import { v4 as uuid } from 'uuid';
 
 const server = app({
   logger,
   pluginTimeout: 50000,
   bodyLimit: 15485760,
+  genReqId: () => {
+    return uuid();
+  },
 });
 
 if (import.meta.env.PROD) {

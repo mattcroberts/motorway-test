@@ -119,4 +119,11 @@ The URI for this test stub in Mocky is https://run.mocky.io/v3/064fb24f-21ca-4b8
 
 
 # Candidate Notes
-Here is a place for you to put any notes regarding the changes you made and the reasoning and what further changes you wish to suggest.
+
+For the circuit breaker implementation, the constructor options should be externalised e.g. via environment variables. If it were running in a multi instance environment the internal properies which track error rates could be put into a fast db (e.g. redis).
+
+Due to time constraints, test coverage is quite low. There are currently not tests for the request hooks or the request auditing. For a real application these could be easily added.
+
+The models returned by the API should have different classes and mapping than those stored in the DB.
+
+This was my first time using fastify so things might be different with experience. I know there are some warnings about using the reply context because of deprication, this could likely be worked around by using a new decorated property.

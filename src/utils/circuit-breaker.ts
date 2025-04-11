@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { CircuitBreakerError } from './CircuitBreakerError';
+import { CircuitBreakerError } from './circuit-breaker-error';
 
 export class CircuitBreaker {
   private primaryErrorCount = 0;
@@ -56,7 +56,7 @@ export class CircuitBreaker {
           'Fallback action failed',
           'FALLBACK_ERROR',
         );
-        err.cause = error;
+        err.cause = error as Error;
 
         this.fastify.log.error(err, 'Error executing fallback action:');
 
@@ -75,7 +75,7 @@ export class CircuitBreaker {
         'Primary action failed',
         'PRIMARY_ERROR',
       );
-      err.cause = error;
+      err.cause = error as Error;
 
       throw err;
     } finally {

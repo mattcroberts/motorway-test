@@ -3,7 +3,8 @@ import { fetchValuationFromSuperCarValuation } from '@app/super-car/super-car-va
 import { FastifyInstance } from 'fastify';
 import { VehicleValuationRequest } from './types/vehicle-valuation-request';
 import { fetchValuationFromPremiumCarValuation } from '@app/premium-car/premium-car-valuation';
-import { CircuitBreakerError } from '@app/CircuitBreakerError';
+import { CircuitBreakerError } from '@app/utils/circuit-breaker-error';
+import { Source } from '@app/models/source';
 
 export const PUT = (fastify: FastifyInstance) => {
   fastify.put<{
@@ -32,6 +33,8 @@ export const PUT = (fastify: FastifyInstance) => {
 
     const result = await valuationRepository.findOneBy({ vrm: vrm });
     if (result) {
+      reply.context.provider = result.source;
+      reply.context.vrm = vrm;
       return {
         ...result,
         source: result.source || 'UNKNOWN',
@@ -47,14 +50,23 @@ export const PUT = (fastify: FastifyInstance) => {
     } catch (error) {
       fastify.log.error(error, 'Error fetching valuation');
 
-      if ((error as CircuitBreakerError).type === 'FALLBACK_ERROR') {
+      const type = (error as CircuitBreakerError).type;
+
+      const provider =
+        type === 'FALLBACK_ERROR' ? Source.PREMIUM : Source.SUPER_CAR;
+
+      reply.context.provider = provider;
+      reply.context.vrm = vrm;
+
+      if (type === 'FALLBACK_ERROR') {
         return reply.code(503).send({
           message: 'Service temporarily unavailable',
           statusCode: 503,
         });
       }
+      const cause = (error as CircuitBreakerError).cause || error;
 
-      throw error;
+      throw cause;
     }
 
     await valuationRepository.insert(valuation).catch((err) => {
@@ -63,8 +75,8 @@ export const PUT = (fastify: FastifyInstance) => {
       }
     });
 
-    fastify.log.info('Valuation saved');
-
+    reply.context.provider = valuation.source;
+    reply.context.vrm = vrm;
     return valuation;
   });
 };

@@ -1,7 +1,8 @@
 import axios, { AxiosResponse } from 'axios';
 
 import { FastifyInstance } from 'fastify';
-import { Source, VehicleValuation } from '../models/vehicle-valuation';
+import { VehicleValuation } from '../models/vehicle-valuation';
+import { Source } from '@app/models/source';
 import { SuperCarValuationResponse } from './types/super-car-valuation-response';
 
 export async function fetchValuationFromSuperCarValuation(

@@ -6,7 +6,10 @@ import { valuationRoutes } from './routes/valuation';
 
 import databaseConnection from 'typeorm-fastify-plugin';
 import { VehicleValuation } from './models/vehicle-valuation';
-import { CircuitBreaker } from './circuit-breaker';
+import { CircuitBreaker } from './utils/circuit-breaker';
+import { RequestAuditEntry } from './models/request-audit';
+import { onResponseHook } from './hooks/on-response';
+import { onErrorHook } from './hooks/on-error';
 
 export const app = (opts?: FastifyServerOptions) => {
   const fastify = Fastify(opts);
@@ -19,7 +22,7 @@ export const app = (opts?: FastifyServerOptions) => {
       database: process.env.DATABASE_PATH!,
       synchronize: process.env.SYNC_DATABASE === 'true',
       logging: false,
-      entities: [VehicleValuation],
+      entities: [VehicleValuation, RequestAuditEntry],
       migrations: [],
       subscribers: [],
     })
@@ -28,6 +31,8 @@ export const app = (opts?: FastifyServerOptions) => {
       premiumCarValuationApiUrl: process.env.PREMIUM_CAR_VALUATION_API_URL!,
     })
     .decorate('valuationCircuitBreaker', circuitBreaker)
+    .addHook('onResponse', onResponseHook(fastify))
+    .addHook('onError', onErrorHook(fastify))
     .ready();
 
   fastify.get('/', async () => {

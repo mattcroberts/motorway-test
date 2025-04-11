@@ -25,6 +25,9 @@ export const GET = (fastify: FastifyInstance) => {
       });
     }
 
+    reply.context.provider = result.source;
+    reply.context.vrm = vrm;
+
     return {
       ...result,
       source: result.source || 'UNKNOWN',

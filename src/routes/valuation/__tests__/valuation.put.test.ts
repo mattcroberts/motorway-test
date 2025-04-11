@@ -4,12 +4,16 @@ import AxiosMockAdapter from 'axios-mock-adapter';
 import axios from 'axios';
 import { SuperCarValuationResponse } from '@app/super-car/types/super-car-valuation-response';
 import { mockValuationRepository } from './mockValuationRepository';
+import { Source } from '@app/models/source';
+import { VehicleValuation } from '@app/models/vehicle-valuation';
 
 describe('ValuationController PUT (e2e)', () => {
   beforeAll(async () => {
-    fastify.orm.getRepository = vi
-      .fn()
-      .mockReturnValue(mockValuationRepository);
+    fastify.orm.getRepository = vi.fn().mockImplementation((clazz) => {
+      if (clazz === VehicleValuation) {
+        return mockValuationRepository;
+      }
+    });
   });
 
   beforeAll(() => {
@@ -38,6 +42,8 @@ describe('ValuationController PUT (e2e)', () => {
 
     cb.setPrimaryDown(false);
     cb.setSwitchoverDate(new Date());
+
+    vi.clearAllMocks();
   });
 
   describe('PUT /valuations/', () => {
@@ -135,9 +141,10 @@ describe('ValuationController PUT (e2e)', () => {
 
     it('should not lookup valuation via any api if it exists in the database', async () => {
       mockValuationRepository.findOneBy.mockResolvedValueOnce({
-        vrm: 'ABC123',
+        vrm: 'ABC1234',
         lowestValue: 100000,
         highestValue: 150000,
+        source: Source.SUPER_CAR,
       });
       const cb = fastify.valuationCircuitBreaker;
 
@@ -146,19 +153,20 @@ describe('ValuationController PUT (e2e)', () => {
       };
 
       const res = await fastify.inject({
-        url: '/valuations/ABC123',
+        url: '/valuations/ABC1234',
         body: requestBody,
         method: 'PUT',
       });
 
       expect(res.statusCode).toStrictEqual(200);
       expect(res.json()).toEqual({
-        vrm: 'ABC123',
+        vrm: 'ABC1234',
         lowestValue: 100000,
         highestValue: 150000,
+        source: Source.SUPER_CAR,
       });
       expect(mockValuationRepository.findOneBy).toHaveBeenCalledWith({
-        vrm: 'ABC123',
+        vrm: 'ABC1234',
       });
       expect(mockValuationRepository.insert).not.toHaveBeenCalled();
 
