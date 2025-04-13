@@ -16,6 +16,8 @@ export const GET = (fastify: FastifyInstance) => {
         .send({ message: 'vrm must be 7 characters or less', statusCode: 400 });
     }
 
+    reply.context.vrm = vrm;
+
     const result = await valuationRepository.findOneBy({ vrm: vrm });
 
     if (result == null) {
@@ -26,7 +28,6 @@ export const GET = (fastify: FastifyInstance) => {
     }
 
     reply.context.provider = result.source;
-    reply.context.vrm = vrm;
 
     return {
       ...result,
